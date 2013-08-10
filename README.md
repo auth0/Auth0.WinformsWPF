@@ -14,6 +14,8 @@
      "Your Client ID",
      "Your Client Secret");
   ~~~
+  
+  > Note: it is recommended to store the secret safely using DPAPI or something similar
 
 3. Trigger login (with Widget) 
 
