@@ -3,7 +3,7 @@
 1. Install NuGet
 
   ~~~ps
-  Install-Package Auth0.WinformsWPF
+  Install-Package Auth0.WinformsOrWPF
   ~~~
 
 2. Instantiate Auth0Client
