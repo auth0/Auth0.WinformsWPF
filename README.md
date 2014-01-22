@@ -10,12 +10,9 @@
 
   ~~~cs
   var auth0 = new Auth0Client(
-     "youraccount.auth0.com",
-     "Your Client ID",
-     "Your Client Secret");
+     "{YOUR_AUTH0_DOMAIN}",
+     "{YOUR_CLIENT_ID}");
   ~~~
-  
-  > Note: it is recommended to store the secret safely using DPAPI or something similar
 
 3. Trigger login (with Widget) 
 
@@ -26,23 +23,49 @@
     - get user email => t.Result.Profile["email"].ToString()
     - get facebook/google/twitter/etc access token => t.Result.Profile["identities"][0]["access_token"]
     - get Windows Azure AD groups => t.Result.Profile["groups"]
-    - etc.    
+    - etc. */ 
   },
   TaskScheduler.FromCurrentSynchronizationContext());
   ~~~
 
   ![](http://puu.sh/3YxF9.png)
 
-Or you can use the connection as a parameter (e.g. here we login with a Windows Azure AD account)
+Or you can use the connection as a parameter (e.g. here we login with a Windows Azure AD account):
 
 ~~~cs
 auth0.LoginAsync(this, "auth0waadtests.onmicrosoft.com").ContinueWith(t => .. );
 ~~~
 
-Or a database
+Or a database connection:
 
 ~~~cs
-auth0.LoginAsync(this, "my-db-connection", "username", "password").ContinueWith(t => .. );
+auth0.LoginAsync("my-db-connection", "username", "password").ContinueWith(t => .. );
+~~~
+
+### Scope
+
+Optionally you can specify the `scope` parameter. There are two possible values for scope today:
+
+* __scope: "openid"__ _(default)_ - It will return, not only the `access_token`, but also an `id_token` which is a Json Web Token (JWT). The JWT will only contain the user id.
+* __scope: "openid profile"__ - If you want the entire user profile to be part of the `id_token`.
+
+### Delegation Token Request
+
+You can obtain a delegation token specifying the ID of the target client (`targetClientId`) and, optionally, an `IDictionary<string, string>` object (`options`) in order to include custom parameters like scope or id_token:
+
+~~~cs
+var targetClientId = "{TARGET_CLIENT_ID}";
+var options = new Dictionary<string, string>
+{
+    { "scope", "openid profile" },		// default: openid
+    { "id_token", "USER_ID_TOKEN" }		// default: id_token of the authenticated user (auth0.CurrentUser.IdToken)
+};
+
+auth0.GetDelegationToken(targetClientId, options)
+     .ContinueWith(t =>
+        {
+            // Call your API using t.Result["id_token"]
+        });
 ~~~
 
 ---
