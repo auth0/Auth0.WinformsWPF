@@ -1,11 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using System.Net.Http;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Auth0.Windows
@@ -15,22 +12,22 @@ namespace Auth0.Windows
     /// </summary>
     public partial class Auth0Client
     {
-        private const string AuthorizeUrl = "https://{0}/authorize?client_id={1}&scope={4}&redirect_uri={2}&response_type=token&connection={3}";
-        private const string LoginWidgetUrl = "https://{0}/login/?client={1}&scope={3}&redirect_uri={2}&response_type=token";
+        private const string AuthorizeUrl = "https://{0}/authorize?client_id={1}&redirect_uri={2}&response_type=token&connection={3}&scope={4}";
+        private const string LoginWidgetUrl = "https://{0}/login/?client={1}&redirect_uri={2}&response_type=token&scope={3}";
         private const string ResourceOwnerEndpoint = "https://{0}/oauth/ro";
+        private const string DelegationEndpoint = "https://{0}/delegation";
+        private const string UserInfoEndpoint = "https://{0}/userinfo?access_token={1}";
         private const string DefaultCallback = "https://{0}/mobile";
 
-        private readonly string subDomain;
+        private readonly string domain;
         private readonly string clientId;
-        private readonly string clientSecret;
 
         internal string State { get; set; }
 
-        public Auth0Client(string subDomain, string clientId, string clientSecret)
+        public Auth0Client(string domain, string clientId)
         {
-            this.subDomain = subDomain.Contains('.') ? subDomain : subDomain + ".auth0.com";
+            this.domain = domain;
             this.clientId = clientId;
-            this.clientSecret = clientSecret;
         }
 
         public Auth0User CurrentUser { get; private set; }
@@ -39,7 +36,7 @@ namespace Auth0.Windows
         {
             get
             {
-                return string.Format(DefaultCallback, this.subDomain);
+                return string.Format(DefaultCallback, this.domain);
             }
         }
 
@@ -52,7 +49,7 @@ namespace Auth0.Windows
         /// <remarks>When using openid profile if the user has many attributes the token might get big and the embedded browser (Internet Explorer) won't be able to parse a large URL</remarks>
         /// </param>
         /// <returns>Returns a Task of Auth0User</returns>
-        public Task<Auth0User> LoginAsync(IWin32Window owner, string connection = "", string scope = "openid profile")
+        public Task<Auth0User> LoginAsync(IWin32Window owner, string connection = "", string scope = "openid")
         {
             var tcs = new TaskCompletionSource<Auth0User>();
             var auth = this.GetAuthenticator(connection, scope);
@@ -77,7 +74,7 @@ namespace Auth0.Windows
                     }
                     else
                     {
-                        this.CurrentUser = e.Account;
+                        this.SetupCurrentUser(e.Account);
                         tcs.TrySetResult(this.CurrentUser);
                     }
                 }
@@ -97,13 +94,12 @@ namespace Auth0.Windows
         /// <param name="password type="string"">User password.</param>
         /// <param name="scope">Optional. Scope indicating what attributes are needed. "openid" to just get the user id or "openid profile" to get back everything.
         /// </param>
-        public Task<Auth0User> LoginAsync(string connection, string userName, string password, string scope = "openid profile")
+        public Task<Auth0User> LoginAsync(string connection, string userName, string password, string scope = "openid")
         {
-            var endpoint = string.Format(ResourceOwnerEndpoint, this.subDomain);
+            var endpoint = string.Format(ResourceOwnerEndpoint, this.domain);
             var parameters = new Dictionary<string, string> 
 			{
 				{ "client_id", this.clientId },
-				{ "client_secret", this.clientSecret },
 				{ "connection", connection },
 				{ "username", userName },
 				{ "password", password },
@@ -150,9 +146,46 @@ namespace Auth0.Windows
             this.CurrentUser = null;
         }
 
+        private void SetupCurrentUser(Auth0User auth0User)
+        {
+            if (auth0User.Profile != null)
+            {
+                this.CurrentUser = auth0User;
+            }
+            else
+            {
+                this.SetupCurrentUser(new Dictionary<string, string> 
+                {
+                    { "access_token", auth0User.Auth0AccessToken },
+                    { "id_token", auth0User.IdToken },
+                    { "state", auth0User.State }
+                });
+            }
+        }
+
         private void SetupCurrentUser(IDictionary<string, string> accountProperties)
         {
-            this.CurrentUser = new Auth0User(accountProperties);
+            var endpoint = string.Format(UserInfoEndpoint, this.domain, accountProperties["access_token"]);
+            var request = new HttpClient();
+
+            request.GetAsync(new Uri(endpoint)).ContinueWith(t =>
+            {
+                try
+                {
+                    t.Result.EnsureSuccessStatusCode();
+                    var profileString = t.Result.Content.ReadAsStringAsync().Result;
+                    accountProperties.Add("profile", profileString);
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+                finally
+                {
+                    this.CurrentUser = new Auth0User(accountProperties);
+                }
+            })
+            .Wait();
         }
 
         private BrowserAuthenticationForm GetAuthenticator(string connection, string scope)
@@ -167,8 +200,8 @@ namespace Auth0.Windows
 
             var redirectUri = this.CallbackUrl;
             var authorizeUri = !string.IsNullOrWhiteSpace(connection) ?
-                string.Format(AuthorizeUrl, subDomain, clientId, Uri.EscapeDataString(redirectUri), connection, Uri.EscapeDataString(scope)) :
-                string.Format(LoginWidgetUrl, subDomain, clientId, Uri.EscapeDataString(redirectUri), Uri.EscapeDataString(scope));
+                string.Format(AuthorizeUrl, this.domain, this.clientId, Uri.EscapeDataString(redirectUri), connection, scope) :
+                string.Format(LoginWidgetUrl, this.domain, this.clientId, Uri.EscapeDataString(redirectUri), scope);
 
             this.State = new string(chars);
             var startUri = new Uri(authorizeUri + "&state=" + this.State);
