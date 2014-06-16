@@ -246,7 +246,7 @@ namespace Auth0.Windows
             .Wait();
         }
 
-        private BrowserAuthenticationForm GetAuthenticator(string connection, string scope)
+        protected virtual BrowserAuthenticationForm GetAuthenticator(string connection, string scope)
         {
             // Generate state to include in startUri
             var chars = new char[16];
