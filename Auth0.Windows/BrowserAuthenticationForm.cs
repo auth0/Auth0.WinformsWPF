@@ -21,12 +21,7 @@ namespace Auth0.Windows
         public event EventHandler<AuthenticatorCompletedEventArgs> Completed;
         public event EventHandler<AuthenticatorErrorEventArgs> Error;
 
-        private WebBrowser loadingBrowser = new WebBrowser();
-
-        private const int INTERNET_OPTION_END_BROWSER_SESSION = 42;
-
-        [DllImport("wininet.dll", SetLastError = true)]
-        private static extern bool InternetSetOption(IntPtr hInternet, int dwOption, IntPtr lpBuffer, int lpdwBufferLength);  
+        private WebBrowser loadingBrowser = new WebBrowser();  
   
         public BrowserAuthenticationForm(Uri startUrl, Uri endUrl)
         {
@@ -135,7 +130,6 @@ namespace Auth0.Windows
 
         public void ShowUI(IWin32Window owner)
         {
-            InternetSetOption(IntPtr.Zero, INTERNET_OPTION_END_BROWSER_SESSION, IntPtr.Zero, 0);  
             this.browser.Navigate(this.StartUrl.AbsoluteUri);
             this.ShowDialog(owner);
         }
