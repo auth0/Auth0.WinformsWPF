@@ -202,6 +202,7 @@ namespace Auth0.Windows
         public void Logout()
         {
             this.CurrentUser = null;
+            WebBrowserHelpers.ClearCache();
         }
 
         private void SetupCurrentUser(Auth0User auth0User)
