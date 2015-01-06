@@ -73,7 +73,7 @@ namespace Auth0.Windows
             {
                 if (fragment == null || fragment.Keys.Count == 1)
                 {
-                    OnError("The response is too large and Internet Explorer does not support it. Try using scope=openid instead or remove attributes with rules");
+                    OnError("The response is too large and Internet Explorer does not support it. Try using scope=openid instead or remove attributes with rules.");
                 }
                 else
                 {
@@ -151,6 +151,7 @@ namespace Auth0.Windows
 
         private void CancelButton_Click(object sender, EventArgs e)
         {
+            this.OnError("The operation was canceled by the user.");
             this.Close();
         }
 
