@@ -1,12 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
-using System.Runtime.InteropServices;
 
 namespace Auth0.Windows
 {
@@ -15,33 +10,33 @@ namespace Auth0.Windows
         public Uri StartUrl { get; set; }
         public Uri EndUrl { get; set; }
 
-        static char[] AmpersandChars = new char[] { '&' };
-        static char[] EqualsChars = new char[] { '=' };
+        static readonly char[] AmpersandChars = { '&' };
+        static readonly char[] EqualsChars = { '=' };
 
         public event EventHandler<AuthenticatorCompletedEventArgs> Completed;
         public event EventHandler<AuthenticatorErrorEventArgs> Error;
 
-        private WebBrowser loadingBrowser = new WebBrowser();  
+        private readonly WebBrowser _loadingBrowser = new WebBrowser();  
   
         public BrowserAuthenticationForm(Uri startUrl, Uri endUrl)
         {
             InitializeComponent();
-            this.browser.Hide();
-            this.loadingBrowser.Show();
-            this.loadingBrowser.DocumentText = "<!DOCTYPE html><html lang=en><head><meta charset=utf-8><style type=text/css>html,body{overflow: hidden;background-color:#000;color:#FFF;margin:0}#loading{width:100%;height:100%;background:url(\"https://s3.amazonaws.com/assets.auth0.com/loading.gif\") no-repeat center center #fff;position:fixed;opacity:.9}</style></head><body><div id=loading></div></body></html>";
-            this.loadingBrowser.Dock = DockStyle.Fill;
-            this.BrowserPanel.Controls.Add(this.loadingBrowser);
+            browser.Hide();
+            _loadingBrowser.Show();
+            _loadingBrowser.DocumentText = "<!DOCTYPE html><html lang=en><head><meta charset=utf-8><style type=text/css>html,body{overflow: hidden;background-color:#000;color:#FFF;margin:0}#loading{width:100%;height:100%;background:url(\"https://s3.amazonaws.com/assets.auth0.com/loading.gif\") no-repeat center center #fff;position:fixed;opacity:.9}</style></head><body><div id=loading></div></body></html>";
+            _loadingBrowser.Dock = DockStyle.Fill;
+            BrowserPanel.Controls.Add(_loadingBrowser);
 
-            this.StartUrl = startUrl;
-            this.EndUrl = endUrl;
+            StartUrl = startUrl;
+            EndUrl = endUrl;
         }
 
         private void browser_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
         {
-            if (this.BrowserPanel.Controls.ContainsKey("Loading") && e.Url.PathAndQuery.Contains("rpc.html"))
+            if (BrowserPanel.Controls.ContainsKey("Loading") && e.Url.PathAndQuery.Contains("rpc.html"))
             {
-                this.loadingBrowser.Hide();
-                this.browser.Show();                
+                _loadingBrowser.Hide();
+                browser.Show();                
             }
 
             UpdateStatus("");
@@ -62,7 +57,7 @@ namespace Auth0.Windows
                     description = all["error_description"];
                 }
                 OnError(description);
-                this.Close();
+                Close();
                 return;
             }
 
@@ -80,14 +75,14 @@ namespace Auth0.Windows
                     OnCompleted(fragment);
                 }
                 
-                this.Close();
+                Close();
             }
         }
 
         protected virtual void OnCompleted(IDictionary<string, string> fragment)
         {
             if (Completed != null)
-                Completed(this, new AuthenticatorCompletedEventArgs(new Auth0User(fragment)));
+                Completed(this, new AuthenticatorCompletedEventArgs(fragment));
         }
 
         protected virtual void OnError(string error)
@@ -104,7 +99,7 @@ namespace Auth0.Windows
 
         private bool UrlMatchesRedirect(Uri url)
         {
-            return url.Host == this.EndUrl.Host && url.LocalPath == this.EndUrl.LocalPath;
+            return url.Host == EndUrl.Host && url.LocalPath == EndUrl.LocalPath;
         }
 
         private static IDictionary<string, string> FormDecode(string encodedString)
@@ -130,29 +125,29 @@ namespace Auth0.Windows
 
         public void ShowUI(IWin32Window owner)
         {
-            this.browser.Navigate(this.StartUrl.AbsoluteUri);
-            this.ShowDialog(owner);
+            browser.Navigate(StartUrl.AbsoluteUri);
+            ShowDialog(owner);
         }
 
         private void UpdateStatus(string message)
         {
             if (message == "")
             {
-                this.loadingBrowser.Hide();
-                this.browser.Show();
+                _loadingBrowser.Hide();
+                browser.Show();
             }
             else
             {
-                this.loadingBrowser.Show();
-                this.browser.Hide();
+                _loadingBrowser.Show();
+                browser.Hide();
             }
-            this.LabelStatus.Text = message;
+            LabelStatus.Text = message;
         }
 
         private void CancelButton_Click(object sender, EventArgs e)
         {
-            this.OnError("The operation was canceled by the user.");
-            this.Close();
+            OnError("The operation was canceled by the user.");
+            Close();
         }
 
         private const int cGrip = 16;      // Grip size
@@ -162,14 +157,14 @@ namespace Auth0.Windows
         {
             if (m.Msg == 0x84)
             {  // Trap WM_NCHITTEST
-                Point pos = new Point(m.LParam.ToInt32() & 0xffff, m.LParam.ToInt32() >> 16);
-                pos = this.PointToClient(pos);
+                var pos = new Point(m.LParam.ToInt32() & 0xffff, m.LParam.ToInt32() >> 16);
+                pos = PointToClient(pos);
                 if (pos.Y < cCaption)
                 {
                     m.Result = (IntPtr)2;  // HTCAPTION
                     return;
                 }
-                if (pos.X >= this.ClientSize.Width - cGrip && pos.Y >= this.ClientSize.Height - cGrip)
+                if (pos.X >= ClientSize.Width - cGrip && pos.Y >= ClientSize.Height - cGrip)
                 {
                     m.Result = (IntPtr)17; // HTBOTTOMRIGHT
                     return;
@@ -180,71 +175,26 @@ namespace Auth0.Windows
 
         public class AuthenticatorCompletedEventArgs : EventArgs
         {
-            /// <summary>
-            /// Whether the authentication succeeded and there is a valid <see cref="Account"/>.
-            /// </summary>
-            /// <value>
-            /// <see langword="true"/> if the user is authenticated; otherwise, <see langword="false"/>.
-            /// </value>
-            public bool IsAuthenticated { get { return Account != null; } }
+            public bool IsAuthenticated { get { return Response.Count > 0; } }
+            public IDictionary<string, string> Response { get; private set; }
 
-            /// <summary>
-            /// Gets the account created that represents this authentication.
-            /// </summary>
-            /// <value>
-            /// The account.
-            /// </value>
-            public Auth0User Account { get; private set; }
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="Xamarin.Auth.AuthenticatorCompletedEventArgs"/> class.
-            /// </summary>
-            /// <param name='account'>
-            /// The account created or <see langword="null"/> if authentication failed or was canceled.
-            /// </param>
-            public AuthenticatorCompletedEventArgs(Auth0User account)
+            public AuthenticatorCompletedEventArgs(IDictionary<string, string> response)
             {
-                Account = account;
+                Response = response;
             }
         }
 
         public class AuthenticatorErrorEventArgs : EventArgs
         {
-            /// <summary>
-            /// Gets a message describing the error.
-            /// </summary>
-            /// <value>
-            /// The message.
-            /// </value>
             public string Message { get; private set; }
 
-            /// <summary>
-            /// Gets the exception that signaled the error if there was one.
-            /// </summary>
-            /// <value>
-            /// The exception or <see langword="null"/>.
-            /// </value>
             public Exception Exception { get; private set; }
 
-            /// <summary>
-            /// Initializes a new instance of the <see cref="Xamarin.Auth.AuthenticatorErrorEventArgs"/> class
-            /// with a message but no exception.
-            /// </summary>
-            /// <param name='message'>
-            /// A message describing the error.
-            /// </param>
             public AuthenticatorErrorEventArgs(string message)
             {
                 Message = message;
             }
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="Xamarin.Auth.AuthenticatorErrorEventArgs"/> class with an exception.
-            /// </summary>
-            /// <param name='exception'>
-            /// The exception signaling the error. The message of this object is retrieved from this exception or
-            /// its inner exceptions.
-            /// </param>
+    
             public AuthenticatorErrorEventArgs(Exception exception)
             {
                 Message = exception.ToString();
@@ -259,8 +209,8 @@ namespace Auth0.Windows
 
         private void ToggleFullScreen_Click(object sender, EventArgs e)
         {
-            this.WindowState = this.WindowState == FormWindowState.Normal ? FormWindowState.Maximized : FormWindowState.Normal;
-            this.ToggleFullScreen.Text = this.WindowState == FormWindowState.Maximized ? "Exit Full Screen" : "Full Screen";
+            WindowState = WindowState == FormWindowState.Normal ? FormWindowState.Maximized : FormWindowState.Normal;
+            ToggleFullScreen.Text = WindowState == FormWindowState.Maximized ? "Exit Full Screen" : "Full Screen";
         }
     }
 }
