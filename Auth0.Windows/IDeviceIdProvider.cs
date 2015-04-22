@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace Auth0.Windows
+﻿namespace Auth0.Windows
 {
     public interface IDeviceIdProvider
     {

@@ -15,6 +15,7 @@ namespace Auth0.Windows
 
         public event EventHandler<AuthenticatorCompletedEventArgs> Completed;
         public event EventHandler<AuthenticatorErrorEventArgs> Error;
+        public event EventHandler<AuthenticatorCancelledEventArgs> Cancelled;
 
         private readonly WebBrowser _loadingBrowser = new WebBrowser();  
   
@@ -146,7 +147,10 @@ namespace Auth0.Windows
 
         private void CancelButton_Click(object sender, EventArgs e)
         {
-            OnError("The operation was canceled by the user.");
+            if (Cancelled != null)
+            {
+                Cancelled(this, new AuthenticatorCancelledEventArgs());
+            }
             Close();
         }
 
@@ -172,6 +176,17 @@ namespace Auth0.Windows
             }
             base.WndProc(ref m);
         }
+        
+        private void browser_Navigating(object sender, WebBrowserNavigatingEventArgs e)
+        {
+            UpdateStatus("Loading...");
+        }
+
+        private void ToggleFullScreen_Click(object sender, EventArgs e)
+        {
+            WindowState = WindowState == FormWindowState.Normal ? FormWindowState.Maximized : FormWindowState.Normal;
+            ToggleFullScreen.Text = WindowState == FormWindowState.Maximized ? "Exit Full Screen" : "Full Screen";
+        }
 
         public class AuthenticatorCompletedEventArgs : EventArgs
         {
@@ -194,7 +209,7 @@ namespace Auth0.Windows
             {
                 Message = message;
             }
-    
+
             public AuthenticatorErrorEventArgs(Exception exception)
             {
                 Message = exception.ToString();
@@ -202,15 +217,8 @@ namespace Auth0.Windows
             }
         }
 
-        private void browser_Navigating(object sender, WebBrowserNavigatingEventArgs e)
+        public class AuthenticatorCancelledEventArgs : EventArgs
         {
-            UpdateStatus("Loading...");
-        }
-
-        private void ToggleFullScreen_Click(object sender, EventArgs e)
-        {
-            WindowState = WindowState == FormWindowState.Normal ? FormWindowState.Maximized : FormWindowState.Normal;
-            ToggleFullScreen.Text = WindowState == FormWindowState.Maximized ? "Exit Full Screen" : "Full Screen";
         }
     }
 }

@@ -48,7 +48,7 @@ namespace Auth0.Windows
         {
             _domain = domain;
             _clientId = clientId;
-            DeviceIdProvider = new Device();
+            DeviceIdProvider = new DeviceIdProvider();
         }
 
         public Auth0User CurrentUser { get; private set; }

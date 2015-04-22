@@ -25,12 +25,4 @@ namespace Auth0.Windows
 
         public JObject Profile { get; set; }
     }
-
-    internal static class Extensions
-    {
-        internal static JObject ToJson(this string jsonString)
-        {
-            return JObject.Parse(jsonString);
-        }
-    }
 }

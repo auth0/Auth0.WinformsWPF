@@ -12,29 +12,18 @@ namespace Auth0.Windows
 
                var auth = new BrowserAuthenticationForm(startUri, endUri);
 
-                auth.Error += (o, e) =>
-                {
-                    //var ex = e.Exception ?? new UnauthorizedAccessException(e.Message);
-                    tcs.TrySetResult(new Auth0Result() { Status = Auth0Status.Failed });
-                };
+                auth.Error += (o, e) => tcs.TrySetResult(new Auth0Result {Status = Auth0Status.Failed});
+                auth.Cancelled += (o, e) => tcs.TrySetResult(new Auth0Result { Status = Auth0Status.Cancelled });
 
                 auth.Completed += (o, e) =>
                 {
                     if (!e.IsAuthenticated)
                     {
                         tcs.TrySetResult(new Auth0Result { Status = Auth0Status.Cancelled });
+                        return;
                     }
-                    else
-                    {
-                        /*if (this.State != e.Account.State)
-                        {
-                            tcs.TrySetException(new UnauthorizedAccessException("State does not match"));
-                        }
-                        else*/
-                        {
-                            tcs.TrySetResult(new Auth0Result() { ResponseData = e.Response, Status = Auth0Status.Success});
-                        }
-                    }
+
+                    tcs.TrySetResult(new Auth0Result { ResponseData = e.Response, Status = Auth0Status.Success});
                 };
 
                 auth.ShowUI(owner);
