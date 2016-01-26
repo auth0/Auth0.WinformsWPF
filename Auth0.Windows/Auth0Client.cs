@@ -199,10 +199,20 @@ namespace Auth0.Windows
         /// <summary>
         /// Log a user out of a Auth0 application.
         /// </summary>
-        public void Logout()
+        /// <param name="clearCache">Clear the browser cache.</param>
+        public void Logout(bool clearCache = true)
         {
             this.CurrentUser = null;
-            WebBrowserHelpers.ClearCache();
+            if(clearCache)
+                WebBrowserHelpers.ClearCache();
+        }
+
+        /// <summary>
+        /// Log a user out of a Auth0 application and clear the browser cache.
+        /// </summary>
+        public void Logout()
+        {
+            Logout(true);
         }
 
         private void SetupCurrentUser(Auth0User auth0User)
