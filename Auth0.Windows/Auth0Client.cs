@@ -22,6 +22,8 @@ namespace Auth0.Windows
         private readonly string domain;
         private readonly string clientId;
 
+        private bool clearCache = true;
+
         internal string State { get; set; }
 
         public Auth0Client(string domain, string clientId)
@@ -134,6 +136,10 @@ namespace Auth0.Windows
                     throw ex;
                 }
 
+                //When the user signs in by directly without using the BrowserAuthenticationForm, we don't need
+                //to clear the cache.
+                this.clearCache = false;
+
                 return this.CurrentUser;
             });
         }
@@ -199,10 +205,20 @@ namespace Auth0.Windows
         /// <summary>
         /// Log a user out of a Auth0 application.
         /// </summary>
-        public void Logout()
+        /// <param name="forceClearCache">Force clearing the browser cache, no matter the login method</param>
+        public void Logout(bool forceClearCache = false)
         {
             this.CurrentUser = null;
-            WebBrowserHelpers.ClearCache();
+            if(this.clearCache || forceClearCache)
+                WebBrowserHelpers.ClearCache();
+        }
+
+        /// <summary>
+        /// Log a user out of a Auth0 application.
+        /// </summary>
+        public void Logout()
+        {
+            Logout(this.clearCache);
         }
 
         private void SetupCurrentUser(Auth0User auth0User)
