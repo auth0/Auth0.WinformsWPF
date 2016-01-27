@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Auth0.Windows
 {
@@ -12,14 +9,10 @@ namespace Auth0.Windows
     {
         public WindowWrapper(IntPtr handle)
         {
-            _hwnd = handle;
+            Handle = handle;
         }
 
-        public IntPtr Handle
-        {
-            get { return _hwnd; }
-        }
+        public IntPtr Handle { get; private set; }
 
-        private IntPtr _hwnd;
     }
 }

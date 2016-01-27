@@ -1,88 +1,105 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using System.Linq;
+using System.Windows.Forms;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace Auth0.Windows
 {
+
     /// <summary>
     /// A simple client to Authenticate Users with Auth0.
     /// </summary>
-    public partial class Auth0Client
+    public class Auth0Client
     {
-        private const string AuthorizeUrl = "https://{0}/authorize?client_id={1}&redirect_uri={2}&response_type=token&connection={3}&scope={4}";
-        private const string LoginWidgetUrl = "https://{0}/login/?client={1}&redirect_uri={2}&response_type=token&scope={3}";
+        private const string AuthorizeUrl =
+            "https://{0}/authorize?client_id={1}&redirect_uri={2}&response_type=token&connection={3}&scope={4}";
+
+        private const string LoginWidgetUrl =
+            "https://{0}/login/?client={1}&redirect_uri={2}&response_type=token&scope={3}";
+
+        private const string ParamQueryString = "&{0}={1}";
         private const string ResourceOwnerEndpoint = "https://{0}/oauth/ro";
         private const string DelegationEndpoint = "https://{0}/delegation";
         private const string UserInfoEndpoint = "https://{0}/userinfo?access_token={1}";
         private const string DefaultCallback = "https://{0}/mobile";
 
-        private readonly string domain;
-        private readonly string clientId;
+        private readonly string _domain;
+        private readonly string _clientId;
 
-        internal string State { get; set; }
+        private static readonly string[] ReservedAuthParams =
+        {
+            "state",
+            "access_token",
+            "scope",
+            "protocol",
+            "device",
+            "request_id",
+            "connection_scopes",
+            "nonce",
+            "offline_mode"
+        };
+
 
         public Auth0Client(string domain, string clientId)
         {
-            this.domain = domain;
-            this.clientId = clientId;
+            _domain = domain;
+            _clientId = clientId;
+            DeviceIdProvider = new DeviceIdProvider();
         }
 
         public Auth0User CurrentUser { get; private set; }
 
         public string CallbackUrl
         {
-            get
-            {
-                return string.Format(DefaultCallback, this.domain);
-            }
+            get { return string.Format(DefaultCallback, _domain); }
         }
 
         /// <summary>
-        /// Login a user into an Auth0 application by showing an embedded browser window either showing the widget or skipping it by passing a connection name
+        /// The component used to generate the device's unique id
         /// </summary>
-        /// <param name="owner">The owner window</param>
+        public IDeviceIdProvider DeviceIdProvider { get; set; }
+
+        /// <summary>
+        /// Login a user into an Auth0 application. Attempts to do a background login, but if unsuccessful shows an embedded browser window either showing the widget or skipping it by passing a connection name
+        /// </summary>
+        /// <param name="owner"></param>
         /// <param name="connection">Optional connection name to bypass the login widget</param>
-        /// <param name="scope">Optional. Scope indicating what attributes are needed. "openid" to just get the user_id or "openid profile" to get back everything.
-        /// <remarks>When using openid profile if the user has many attributes the token might get big and the embedded browser (Internet Explorer) won't be able to parse a large URL</remarks>
-        /// </param>
+        /// <param name="withRefreshToken">true to include the refresh_token in the response, false (default) otherwise.
+        /// The refresh_token allows you to renew the id_token indefinitely (does not expire) unless specifically revoked.</param>
+        /// <param name="scope">Optional scope, either 'openid' or 'openid profile'</param>
+        /// <param name="authParams">Additional parameters to forward to Auth0 or to the IdP (like login_hint).</param>
         /// <returns>Returns a Task of Auth0User</returns>
-        public Task<Auth0User> LoginAsync(IWin32Window owner, string connection = "", string scope = "openid")
+        public async Task<Auth0User> LoginAsync(IWin32Window owner, string connection = "", bool withRefreshToken = false, string scope = "openid", IDictionary<string, string> authParams = null)
         {
+            scope = IncreaseScopeWithOfflineAccess(withRefreshToken, scope);
+
             var tcs = new TaskCompletionSource<Auth0User>();
-            var auth = this.GetAuthenticator(connection, scope);
 
-            auth.Error += (o, e) =>
+            var auth = await GetAuthenticatorAsync(owner, connection, scope, authParams);
+        
+            if (auth.Status == Auth0Status.Success)
             {
-                var ex = e.Exception ?? new UnauthorizedAccessException(e.Message);
-                tcs.TrySetException(ex);
-            };
-
-            auth.Completed += (o, e) =>
-            {
-                if (!e.IsAuthenticated)
+                var tokens = auth.ResponseData;
+                if (tokens != null)
                 {
-                    tcs.TrySetCanceled();
+                    SetupCurrentUser(tokens);
+                    tcs.TrySetResult(CurrentUser);
                 }
                 else
                 {
-                    if (this.State != e.Account.State)
-                    {
-                        tcs.TrySetException(new UnauthorizedAccessException("State does not match"));
-                    }
-                    else
-                    {
-                        this.SetupCurrentUser(e.Account);
-                        tcs.TrySetResult(this.CurrentUser);
-                    }
+                    throw new AuthenticationErrorException();
                 }
-            };
+            }
+            else if (auth.Status == Auth0Status.Cancelled)
+            {
+                throw new AuthenticationCancelException();
+            }
 
-            auth.ShowUI(owner);
-
-            return tcs.Task;
+            return CurrentUser;
         }
 
         /// <summary>
@@ -91,108 +108,166 @@ namespace Auth0.Windows
         /// <returns>Task that will complete when the user has finished authentication.</returns>
         /// <param name="connection" type="string">The name of the connection to use in Auth0. Connection defines an Identity Provider.</param>
         /// <param name="userName" type="string">User name.</param>
-        /// <param name="password type="string"">User password.</param>
-        /// <param name="scope">Optional. Scope indicating what attributes are needed. "openid" to just get the user id or "openid profile" to get back everything.
-        /// </param>
-        public Task<Auth0User> LoginAsync(string connection, string userName, string password, string scope = "openid")
+        /// <param name="password" type="string">User password.</param>
+        /// <param name="withRefreshToken">true to include the refresh_token in the response, false otherwise.
+        /// The refresh_token allows you to renew the id_token indefinitely (does not expire) unless specifically revoked.</param>
+        /// <param name="scope">Scope.</param>
+        public async Task<Auth0User> LoginAsync(string connection, string userName, string password, bool withRefreshToken = false, string scope = "openid")
         {
-            var endpoint = string.Format(ResourceOwnerEndpoint, this.domain);
-            var parameters = new Dictionary<string, string> 
-			{
-				{ "client_id", this.clientId },
-				{ "connection", connection },
-				{ "username", userName },
-				{ "password", password },
-				{ "grant_type", "password" },
-				{ "scope", scope }
-			};
+            scope = IncreaseScopeWithOfflineAccess(withRefreshToken, scope);
+
+            var endpoint = string.Format(ResourceOwnerEndpoint, _domain);
+            var parameters = new Dictionary<string, string>
+            {
+                {"client_id", _clientId},
+                {"connection", connection},
+                {"username", userName},
+                {"password", password},
+                {"grant_type", "password"},
+                {"scope", scope}
+            };
+
+            if (scope.Contains("offline_access"))
+            {
+                var deviceId = Uri.EscapeDataString(DeviceIdProvider.GetDeviceId());
+                parameters.Add("device", deviceId);
+            }
 
             var request = new HttpClient();
-            return request.PostAsync(new Uri(endpoint), new FormUrlEncodedContent(parameters)).ContinueWith(t =>
+            var result = await request.PostAsync(new Uri(endpoint), new FormUrlEncodedContent(parameters));
+
+            result.EnsureSuccessStatusCode();
+            var text = result.Content.ReadAsStringAsync().Result;
+            var data = JObject.Parse(text).ToObject<Dictionary<string, string>>();
+
+            if (data.ContainsKey("error"))
             {
-                try
-                {
-                    t.Result.EnsureSuccessStatusCode();
-                    var text = t.Result.Content.ReadAsStringAsync().Result;
-                    var data = JObject.Parse(text).ToObject<Dictionary<string, string>>();
-
-                    if (data.ContainsKey("error"))
-                    {
-                        throw new UnauthorizedAccessException("Error authenticating: " + data["error"]);
-                    }
-                    else if (data.ContainsKey("access_token"))
-                    {
-                        this.SetupCurrentUser(data);
-                    }
-                    else
-                    {
-                        throw new UnauthorizedAccessException("Expected access_token in access token response, but did not receive one.");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    throw ex;
-                }
-
-                return this.CurrentUser;
-            });
-        }
-
-        /// <summary>
-        /// Get a delegation token.
-        /// </summary>
-        /// <returns>Delegation token result.</returns>
-        /// <param name="targetClientId">Target client ID.</param>
-        /// <param name="options">Custom parameters.</param>
-        public Task<JObject> GetDelegationToken(string targetClientId, IDictionary<string, string> options = null)
-        {
-            var id_token = string.Empty;
-            options = options ?? new Dictionary<string, string>();
-
-            // ensure id_token
-            if (options.ContainsKey("id_token"))
+                throw new UnauthorizedAccessException("Error authenticating: " + data["error"]);
+            }
+            if (data.ContainsKey("access_token"))
             {
-                id_token = options["id_token"];
-                options.Remove("id_token");
+                SetupCurrentUser(data);
             }
             else
             {
-                id_token = this.CurrentUser.IdToken;
+                throw new UnauthorizedAccessException("Expected access_token in access token response, but did not receive one.");
             }
 
-            if (string.IsNullOrEmpty(id_token))
+            return CurrentUser;
+        }
+
+        /// <summary>
+        /// Renews the idToken (JWT)
+        /// </summary>
+        /// <returns>The refreshed token.</returns>
+        /// <param name="refreshToken">The refresh token</param>
+        /// <param name="options">Additional parameters.</param>
+        public async Task<JObject> RefreshToken(string refreshToken = "", Dictionary<string, string> options = null)
+        {
+            var emptyToken = string.IsNullOrEmpty(refreshToken);
+            if (emptyToken && (CurrentUser == null || string.IsNullOrEmpty(CurrentUser.RefreshToken)))
             {
                 throw new InvalidOperationException(
-                    "You need to login first or specify a value for id_token parameter.");
+                    "The current user's refresh_token could not be retrieved and no refresh_token was provided as parameter");
             }
 
-            var endpoint = string.Format(DelegationEndpoint, this.domain);
-            var parameters = new Dictionary<string, string> 
+            return await GetDelegationToken(
+                api: "app",
+                refreshToken: emptyToken ? CurrentUser.RefreshToken : refreshToken,
+                options: options);
+        }
+
+        /// <summary>
+        /// Verifies if the jwt for the current user has expired.
+        /// </summary>
+        /// <returns>true if the token has expired, false otherwise.</returns>
+        /// <remarks>Must be logged in before invoking.</remarks>
+        public bool HasTokenExpired()
+        {
+            if (string.IsNullOrEmpty(CurrentUser.IdToken))
             {
-                    { "grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer" },
-                    { "id_token", id_token },
-                    { "target", targetClientId },
-                    { "client_id", this.clientId }
+                throw new InvalidOperationException("You need to login first.");
+            }
+
+            return TokenValidator.HasExpired(CurrentUser.IdToken);
+        }
+
+        /// <summary>
+        /// Renews the idToken (JWT)
+        /// </summary>
+        /// <returns>The refreshed token.</returns>
+        /// <remarks>The JWT must not have expired.</remarks>
+        /// <param name="options">Additional parameters.</param>
+        public Task<JObject> RenewIdToken(Dictionary<string, string> options = null)
+        {
+            if (string.IsNullOrEmpty(CurrentUser.IdToken))
+            {
+                throw new InvalidOperationException("You need to login first.");
+            }
+
+            options = options ?? new Dictionary<string, string>();
+
+            if (!options.ContainsKey("scope"))
+            {
+                options["scope"] = "passthrough";
+            }
+
+            return GetDelegationToken("app", CurrentUser.IdToken, options: options);
+        }
+
+        /// <summary>
+        /// Get a delegation token
+        /// </summary>
+        /// <returns>Delegation token result.</returns>
+        /// <param name="api">The type of the API to be used.</param>
+        /// <param name="idToken">The string representing the JWT. Useful only if not expired.</param>
+        /// <param name="refreshToken">The refresh token.</param>
+        /// <param name="targetClientId">The clientId of the target application for which to obtain a delegation token.</param>
+        /// <param name="options">Additional parameters.</param>
+        public Task<JObject> GetDelegationToken(string api = "", string idToken = "", string refreshToken = "", string targetClientId = "", Dictionary<string, string> options = null)
+        {
+            if (!(string.IsNullOrEmpty(idToken) || string.IsNullOrEmpty(refreshToken)))
+            {
+                throw new InvalidOperationException(
+                    "You must provide either the idToken parameter or the refreshToken parameter, not both.");
+            }
+
+            if (string.IsNullOrEmpty(idToken) && string.IsNullOrEmpty(refreshToken))
+            {
+                if (CurrentUser == null || string.IsNullOrEmpty(CurrentUser.IdToken))
+                {
+                    throw new InvalidOperationException(
+                    "You need to login first or specify a value for idToken or refreshToken parameter.");
+                }
+
+                idToken = CurrentUser.IdToken;
+            }
+
+            options = options ?? new Dictionary<string, string>();
+            options["id_token"] = idToken;
+            options["api_type"] = api;
+            options["refresh_token"] = refreshToken;
+
+            var endpoint = string.Format(DelegationEndpoint, _domain);
+            var parameters = new Dictionary<string, string>
+            {
+                {"grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer"},
+                {"target", targetClientId},
+                {"client_id", _clientId}
             };
 
             // custom parameters
             foreach (var option in options)
             {
-                parameters.Add(option.Key, option.Value);
+                if (!parameters.ContainsKey(option.Key))
+                    parameters.Add(option.Key, option.Value);
             }
 
             var request = new HttpClient();
             return request.PostAsync(new Uri(endpoint), new FormUrlEncodedContent(parameters)).ContinueWith(t =>
             {
-                try
-                {
-                    var text = t.Result.Content.ReadAsStringAsync().Result;
-                    return JObject.Parse(text);
-                }
-                catch (Exception)
-                {
-                    throw;
-                }
+                var text = t.Result.Content.ReadAsStringAsync().Result;
+                return JObject.Parse(text);
             });
         }
 
@@ -201,30 +276,22 @@ namespace Auth0.Windows
         /// </summary>
         public void Logout()
         {
-            this.CurrentUser = null;
-            WebBrowserHelpers.ClearCache();
+            CurrentUser = null;
         }
 
-        private void SetupCurrentUser(Auth0User auth0User)
+        private static string IncreaseScopeWithOfflineAccess(bool withRefreshToken, string scope)
         {
-            if (auth0User.Profile != null)
+            if (withRefreshToken && !scope.Contains("offline_access"))
             {
-                this.CurrentUser = auth0User;
+                scope += " offline_access";
             }
-            else
-            {
-                this.SetupCurrentUser(new Dictionary<string, string> 
-                {
-                    { "access_token", auth0User.Auth0AccessToken },
-                    { "id_token", auth0User.IdToken },
-                    { "state", auth0User.State }
-                });
-            }
+
+            return scope;
         }
 
         private void SetupCurrentUser(IDictionary<string, string> accountProperties)
         {
-            var endpoint = string.Format(UserInfoEndpoint, this.domain, accountProperties["access_token"]);
+            var endpoint = string.Format(UserInfoEndpoint, _domain, accountProperties["access_token"]);
             var request = new HttpClient();
 
             request.GetAsync(new Uri(endpoint)).ContinueWith(t =>
@@ -235,40 +302,80 @@ namespace Auth0.Windows
                     var profileString = t.Result.Content.ReadAsStringAsync().Result;
                     accountProperties.Add("profile", profileString);
                 }
-                catch (Exception ex)
-                {
-                    throw ex;
-                }
                 finally
                 {
-                    this.CurrentUser = new Auth0User(accountProperties);
+                    CurrentUser = new Auth0User(accountProperties);
                 }
             })
-            .Wait();
+                .Wait();
         }
 
-        protected virtual BrowserAuthenticationForm GetAuthenticator(string connection, string scope)
+
+        private async Task<Auth0Result> GetAuthenticatorAsync(IWin32Window owner, string connection, string scope, IEnumerable<KeyValuePair<string, string>> authParams)
         {
             // Generate state to include in startUri
             var chars = new char[16];
             var rand = new Random();
             for (var i = 0; i < chars.Length; i++)
             {
-                chars[i] = (char)rand.Next((int)'a', (int)'z' + 1);
+                chars[i] = (char)rand.Next('a', 'z' + 1);
             }
 
-            var redirectUri = this.CallbackUrl;
-            var authorizeUri = !string.IsNullOrWhiteSpace(connection) ?
-                string.Format(AuthorizeUrl, this.domain, this.clientId, Uri.EscapeDataString(redirectUri), connection, scope) :
-                string.Format(LoginWidgetUrl, this.domain, this.clientId, Uri.EscapeDataString(redirectUri), scope);
+            // Encode scope value
+            scope = WebUtility.UrlEncode(scope);
 
-            this.State = new string(chars);
-            var startUri = new Uri(authorizeUri + "&state=" + this.State);
+            var redirectUri = CallbackUrl;
+            var authorizeUri = !string.IsNullOrWhiteSpace(connection)
+                ? string.Format(AuthorizeUrl, _domain, _clientId, Uri.EscapeDataString(redirectUri),
+                    connection,
+                    scope)
+                : string.Format(LoginWidgetUrl, _domain, _clientId, Uri.EscapeDataString(redirectUri), scope);
+
+            if (scope != null && scope.Contains("offline_access"))
+            {
+                var deviceId = Uri.EscapeDataString(DeviceIdProvider.GetDeviceId());
+                authorizeUri += string.Format("&device={0}", deviceId);
+            }
+
+            // Add custom auth params to the request.
+            if (authParams != null)
+            {
+                foreach (var authParam in authParams.Where(a => !ReservedAuthParams.Contains(a.Key)))
+                    authorizeUri += String.Format(ParamQueryString, authParam.Key, authParam.Value);
+            }
+
+            var state = new string(chars);
+            var startUri = new Uri(authorizeUri + "&state=" + state);
             var endUri = new Uri(redirectUri);
 
-            var auth = new BrowserAuthenticationForm(startUri, endUri);
-
-            return auth;
+            return await Auth0Broker.AuthenticateAsync(owner, startUri, endUri);
         }
+
+        /*
+        private static bool RequireDevice(string scope)
+        {
+            return !String.IsNullOrEmpty(scope) && scope.Contains("offline_access");
+        }*/
+         
+        ///// <summary>
+        ///// After authenticating the result will be: https://callback#id_token=1234&access_token=12345&...
+        ///// </summary>
+        ///// <param name="result"></param>
+        ///// <returns></returns>
+        //private static Dictionary<string, string> ParseResult(string result)
+        //{
+        //    if (String.IsNullOrEmpty(result) || !result.Contains("#"))
+        //        return null;
+
+        //    var tokens = new Dictionary<string, string>();
+
+        //    foreach (var tokenPart in result.Split('#')[1].Split('&'))
+        //    {
+        //        var tokenKeyValue = tokenPart.Split('=');
+        //        tokens.Add(tokenKeyValue[0], tokenKeyValue[1]);
+        //    }
+
+        //    return tokens;
+        //}
     }
 }
