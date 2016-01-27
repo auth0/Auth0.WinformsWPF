@@ -11,6 +11,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinformsSample", "samples\W
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfSample", "samples\WpfSample\WpfSample.csproj", "{01BE7D2A-1373-4308-871F-E5544C2CB061}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Nuget", "Nuget", "{839B8B0B-FB7D-41C2-A965-70028C4C1795}"
+	ProjectSection(SolutionItems) = preProject
+		Nuget\Auth0.WinformsOrWPF.nuspec = Nuget\Auth0.WinformsOrWPF.nuspec
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
