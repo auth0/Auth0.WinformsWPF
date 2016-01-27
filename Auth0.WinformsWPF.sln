@@ -1,22 +1,59 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Auth0.Windows", "Auth0.Windows\Auth0.Windows.csproj", "{FFBFC9DF-C380-4DAB-9EA4-A98BAFB186DC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Auth0.Windows", "src\Auth0.Windows\Auth0.Windows.csproj", "{FFBFC9DF-C380-4DAB-9EA4-A98BAFB186DC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{23BEA5F3-6F83-4B42-9500-9D2F0933A220}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinformsSample", "samples\WinformsSample\WinformsSample.csproj", "{96CECE57-AB08-49D7-AC48-DBF11B2E184B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfSample", "samples\WpfSample\WpfSample.csproj", "{01BE7D2A-1373-4308-871F-E5544C2CB061}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Nuget", "Nuget", "{839B8B0B-FB7D-41C2-A965-70028C4C1795}"
+	ProjectSection(SolutionItems) = preProject
+		Nuget\Auth0.WinformsOrWPF.nuspec = Nuget\Auth0.WinformsOrWPF.nuspec
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x86 = Debug|x86
 		Release|Any CPU = Release|Any CPU
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{FFBFC9DF-C380-4DAB-9EA4-A98BAFB186DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FFBFC9DF-C380-4DAB-9EA4-A98BAFB186DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FFBFC9DF-C380-4DAB-9EA4-A98BAFB186DC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FFBFC9DF-C380-4DAB-9EA4-A98BAFB186DC}.Debug|x86.Build.0 = Debug|Any CPU
 		{FFBFC9DF-C380-4DAB-9EA4-A98BAFB186DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FFBFC9DF-C380-4DAB-9EA4-A98BAFB186DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FFBFC9DF-C380-4DAB-9EA4-A98BAFB186DC}.Release|x86.ActiveCfg = Release|Any CPU
+		{FFBFC9DF-C380-4DAB-9EA4-A98BAFB186DC}.Release|x86.Build.0 = Release|Any CPU
+		{96CECE57-AB08-49D7-AC48-DBF11B2E184B}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{96CECE57-AB08-49D7-AC48-DBF11B2E184B}.Debug|Any CPU.Build.0 = Debug|x86
+		{96CECE57-AB08-49D7-AC48-DBF11B2E184B}.Debug|x86.ActiveCfg = Debug|x86
+		{96CECE57-AB08-49D7-AC48-DBF11B2E184B}.Debug|x86.Build.0 = Debug|x86
+		{96CECE57-AB08-49D7-AC48-DBF11B2E184B}.Release|Any CPU.ActiveCfg = Release|x86
+		{96CECE57-AB08-49D7-AC48-DBF11B2E184B}.Release|Any CPU.Build.0 = Release|x86
+		{96CECE57-AB08-49D7-AC48-DBF11B2E184B}.Release|x86.ActiveCfg = Release|x86
+		{96CECE57-AB08-49D7-AC48-DBF11B2E184B}.Release|x86.Build.0 = Release|x86
+		{01BE7D2A-1373-4308-871F-E5544C2CB061}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{01BE7D2A-1373-4308-871F-E5544C2CB061}.Debug|Any CPU.Build.0 = Debug|x86
+		{01BE7D2A-1373-4308-871F-E5544C2CB061}.Debug|x86.ActiveCfg = Debug|x86
+		{01BE7D2A-1373-4308-871F-E5544C2CB061}.Debug|x86.Build.0 = Debug|x86
+		{01BE7D2A-1373-4308-871F-E5544C2CB061}.Release|Any CPU.ActiveCfg = Release|x86
+		{01BE7D2A-1373-4308-871F-E5544C2CB061}.Release|Any CPU.Build.0 = Release|x86
+		{01BE7D2A-1373-4308-871F-E5544C2CB061}.Release|x86.ActiveCfg = Release|x86
+		{01BE7D2A-1373-4308-871F-E5544C2CB061}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{96CECE57-AB08-49D7-AC48-DBF11B2E184B} = {23BEA5F3-6F83-4B42-9500-9D2F0933A220}
+		{01BE7D2A-1373-4308-871F-E5544C2CB061} = {23BEA5F3-6F83-4B42-9500-9D2F0933A220}
 	EndGlobalSection
 EndGlobal

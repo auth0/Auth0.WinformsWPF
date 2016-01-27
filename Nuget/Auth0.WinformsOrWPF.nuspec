@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+    <metadata>
+        <id>Auth0.WinformsOrWPF</id>
+        <version>0.7.2</version>
+        <title>Configure WPF or Winforms App with Auth0</title>
+        <authors>Auth0</authors>
+        <owners>Auth0</owners>
+        <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
+        <projectUrl>https://github.com/auth0/Auth0.WinformsWPF</projectUrl>
+        <iconUrl>http://secure.gravatar.com/avatar/805765c256ff8617fcad483b5476faf2</iconUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>
+          Add Auth0 authentication dialog to Windows Forms or WPF applications.
+        </description>
+      <summary>
+        * Add authentication with multiple authentication sources (https://docs.auth0.com/identityproviders), either social like "Google, Facebook, Microsoft Account, LinkedIn, GitHub, Twitter", or enterprise identity systems like "Windows Azure AD, Google Apps, AD, ADFS or any SAML Identity Provider".
+        * Add authentication through more traditional username/password databases (https://docs.auth0.com/mysql-connection-tutorial).
+        * Add support for linking different user accounts (https://docs.auth0.com/link-accounts) with the same user.
+        * Support for generating signed Json Web Tokens (https://docs.auth0.com/jwt) to call your APIs and "flow the user identity" securely.
+        * Support for integrating with "Windows Azure Mobile Services backends".
+        * Analytics of how, when and where users are logging in.
+        * Pull data from other sources and add it to the user profile, through JavaScript rules (https://docs.auth0.com/rules).
+      </summary>
+        <tags>auth0 wpf winforms social login google facebook twitter linkedin github "windows azure" waad adfs</tags>
+        <dependencies>
+            <group targetFramework=".NETFramework4.0">
+                <dependency id="Microsoft.Net.Http" version="2.2.13" />
+                <dependency id="Newtonsoft.Json" version="5.0.6" />
+            </group>
+        </dependencies>
+        <frameworkAssemblies>
+            <frameworkAssembly assemblyName="System.Windows.Forms" targetFramework=".NETFramework4.0" />
+        </frameworkAssemblies>
+    </metadata>
+    <files>
+        <file src="..\src\Auth0.Windows\bin\Release\Auth0.Windows.dll" target="lib\net40\Auth0.Windows.dll" />
+    </files>
+</package>
