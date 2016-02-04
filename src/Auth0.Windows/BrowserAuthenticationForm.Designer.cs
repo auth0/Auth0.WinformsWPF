@@ -29,11 +29,11 @@
         private void InitializeComponent()
         {
             this.panel1 = new System.Windows.Forms.Panel();
+            this.ToggleFullScreen = new System.Windows.Forms.Button();
             this.LabelStatus = new System.Windows.Forms.Label();
             this.BrowserPanel = new System.Windows.Forms.Panel();
             this.browser = new System.Windows.Forms.WebBrowser();
             this.CancelLoginButton = new System.Windows.Forms.Button();
-            this.ToggleFullScreen = new System.Windows.Forms.Button();
             this.panel1.SuspendLayout();
             this.BrowserPanel.SuspendLayout();
             this.SuspendLayout();
@@ -48,8 +48,21 @@
             this.panel1.ForeColor = System.Drawing.Color.Silver;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(332, 469);
+            this.panel1.Size = new System.Drawing.Size(484, 600);
             this.panel1.TabIndex = 0;
+            // 
+            // ToggleFullScreen
+            // 
+            this.ToggleFullScreen.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.ToggleFullScreen.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.ToggleFullScreen.ForeColor = System.Drawing.Color.Black;
+            this.ToggleFullScreen.Location = new System.Drawing.Point(380, 7);
+            this.ToggleFullScreen.Name = "ToggleFullScreen";
+            this.ToggleFullScreen.Size = new System.Drawing.Size(97, 21);
+            this.ToggleFullScreen.TabIndex = 2;
+            this.ToggleFullScreen.Text = "Full Screen";
+            this.ToggleFullScreen.UseVisualStyleBackColor = true;
+            this.ToggleFullScreen.Click += new System.EventHandler(this.ToggleFullScreen_Click);
             // 
             // LabelStatus
             // 
@@ -68,11 +81,10 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.BrowserPanel.AutoSize = true;
-            this.BrowserPanel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.BrowserPanel.Controls.Add(this.browser);
-            this.BrowserPanel.Location = new System.Drawing.Point(-1, 34);
+            this.BrowserPanel.Location = new System.Drawing.Point(0, 34);
             this.BrowserPanel.Name = "BrowserPanel";
-            this.BrowserPanel.Size = new System.Drawing.Size(332, 434);
+            this.BrowserPanel.Size = new System.Drawing.Size(484, 565);
             this.BrowserPanel.TabIndex = 2;
             // 
             // browser
@@ -81,7 +93,7 @@
             this.browser.Location = new System.Drawing.Point(0, 0);
             this.browser.MinimumSize = new System.Drawing.Size(20, 20);
             this.browser.Name = "browser";
-            this.browser.Size = new System.Drawing.Size(330, 432);
+            this.browser.Size = new System.Drawing.Size(484, 565);
             this.browser.TabIndex = 0;
             this.browser.DocumentCompleted += new System.Windows.Forms.WebBrowserDocumentCompletedEventHandler(this.browser_DocumentCompleted);
             this.browser.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.browser_Navigating);
@@ -98,25 +110,12 @@
             this.CancelLoginButton.UseVisualStyleBackColor = true;
             this.CancelLoginButton.Click += new System.EventHandler(this.CancelButton_Click);
             // 
-            // ToggleFullScreen
-            // 
-            this.ToggleFullScreen.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.ToggleFullScreen.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ToggleFullScreen.ForeColor = System.Drawing.Color.Black;
-            this.ToggleFullScreen.Location = new System.Drawing.Point(228, 7);
-            this.ToggleFullScreen.Name = "ToggleFullScreen";
-            this.ToggleFullScreen.Size = new System.Drawing.Size(97, 21);
-            this.ToggleFullScreen.TabIndex = 2;
-            this.ToggleFullScreen.Text = "Full Screen";
-            this.ToggleFullScreen.UseVisualStyleBackColor = true;
-            this.ToggleFullScreen.Click += new System.EventHandler(this.ToggleFullScreen_Click);
-            // 
             // BrowserAuthenticationForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.CancelLoginButton;
-            this.ClientSize = new System.Drawing.Size(332, 469);
+            this.ClientSize = new System.Drawing.Size(484, 600);
             this.Controls.Add(this.CancelLoginButton);
             this.Controls.Add(this.panel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
