@@ -53,6 +53,13 @@ namespace Auth0.Windows
         {
             var tcs = new TaskCompletionSource<Auth0User>();
             var auth = this.GetAuthenticator(connection, scope);
+            if (!string.IsNullOrEmpty(connection))
+            {
+                // If we have a connection name we don't want to display the login widget, but we still rely on it.
+                // So we set the position offscreen.
+                auth.StartPosition = FormStartPosition.Manual;
+                auth.Left = -10000;
+            }
 
             auth.Error += (o, e) =>
             {
