@@ -53,6 +53,13 @@ namespace Auth0.Windows
         {
             var tcs = new TaskCompletionSource<Auth0User>();
             var auth = this.GetAuthenticator(connection, scope);
+            if (!string.IsNullOrEmpty(connection))
+            {
+                // If we have a connection name we don't want to display the login widget, but we still rely on it.
+                // So we set the position offscreen.
+                auth.StartPosition = FormStartPosition.Manual;
+                auth.Left = -10000;
+            }
 
             auth.Error += (o, e) =>
             {
@@ -97,15 +104,15 @@ namespace Auth0.Windows
         public Task<Auth0User> LoginAsync(string connection, string userName, string password, string scope = "openid")
         {
             var endpoint = string.Format(ResourceOwnerEndpoint, this.domain);
-            var parameters = new Dictionary<string, string> 
-			{
-				{ "client_id", this.clientId },
-				{ "connection", connection },
-				{ "username", userName },
-				{ "password", password },
-				{ "grant_type", "password" },
-				{ "scope", scope }
-			};
+            var parameters = new Dictionary<string, string>
+            {
+                { "client_id", this.clientId },
+                { "connection", connection },
+                { "username", userName },
+                { "password", password },
+                { "grant_type", "password" },
+                { "scope", scope }
+            };
 
             var request = new HttpClient();
             return request.PostAsync(new Uri(endpoint), new FormUrlEncodedContent(parameters)).ContinueWith(t =>
@@ -167,7 +174,7 @@ namespace Auth0.Windows
             }
 
             var endpoint = string.Format(DelegationEndpoint, this.domain);
-            var parameters = new Dictionary<string, string> 
+            var parameters = new Dictionary<string, string>
             {
                     { "grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer" },
                     { "id_token", id_token },
@@ -212,7 +219,7 @@ namespace Auth0.Windows
             }
             else
             {
-                this.SetupCurrentUser(new Dictionary<string, string> 
+                this.SetupCurrentUser(new Dictionary<string, string>
                 {
                     { "access_token", auth0User.Auth0AccessToken },
                     { "id_token", auth0User.IdToken },
