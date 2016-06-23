@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
     <metadata>
         <id>Auth0.WinformsOrWPF</id>
-        <version>0.7.3</version>
+        <version>0.7.4</version>
         <title>Configure WPF or Winforms App with Auth0</title>
         <authors>Auth0</authors>
         <owners>Auth0</owners>
