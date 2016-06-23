@@ -130,10 +130,16 @@ namespace Auth0.Windows
 
         public void ShowUI(IWin32Window owner)
         {
-            // Always clear the cache to ensure previous logged in user is not in browser cache.
-            // If we do not clear the cache, and a user has signed in before, then that user will display
-            WebBrowserHelpers.ClearCache();
-
+            try
+            {
+                // Always clear the cache to ensure previous logged in user is not in browser cache.
+                // If we do not clear the cache, and a user has signed in before, then that user will display
+                WebBrowserHelpers.ClearCache();
+            }
+            catch
+            {
+                // Suppress any exceptions while clearing the cache. We cannot fail the entire login process because of this.
+            }
             this.browser.Navigate(this.StartUrl.AbsoluteUri);
             this.ShowDialog(owner);
         }
