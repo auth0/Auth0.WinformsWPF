@@ -87,7 +87,7 @@
       <DependentUpon>BrowserAuthenticationForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="WebBrowserHelpers.cs" />
+    <Compile Include="WebBrowserHelper.cs" />
     <Compile Include="WindowsWrapper.cs" />
   </ItemGroup>
   <ItemGroup>
