@@ -25,8 +25,8 @@
         <tags>auth0 wpf winforms social login google facebook twitter linkedin github "windows azure" waad adfs</tags>
         <dependencies>
             <group targetFramework=".NETFramework4.0">
-                <dependency id="Microsoft.Net.Http" version="2.2.13" />
-                <dependency id="Newtonsoft.Json" version="5.0.6" />
+                <dependency id="Microsoft.Net.Http" version="2.2.29" />
+                <dependency id="Newtonsoft.Json" version="8.0.2" />
             </group>
         </dependencies>
         <frameworkAssemblies>
