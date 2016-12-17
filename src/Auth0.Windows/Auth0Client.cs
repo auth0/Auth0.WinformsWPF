@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -18,9 +19,23 @@ namespace Auth0.Windows
         private const string DelegationEndpoint = "https://{0}/delegation";
         private const string UserInfoEndpoint = "https://{0}/userinfo?access_token={1}";
         private const string DefaultCallback = "https://{0}/mobile";
+        private const string ParamQueryString = "&{0}={1}";
 
         private readonly string domain;
         private readonly string clientId;
+
+        private static readonly string[] ReservedAuthParams =
+        {
+            "state",
+            "access_token",
+            "scope",
+            "protocol",
+            "device",
+            "request_id",
+            "connection_scopes",
+            "nonce",
+            "offline_mode"
+        };
 
         internal string State { get; set; }
 
@@ -49,10 +64,10 @@ namespace Auth0.Windows
         /// <remarks>When using openid profile if the user has many attributes the token might get big and the embedded browser (Internet Explorer) won't be able to parse a large URL</remarks>
         /// </param>
         /// <returns>Returns a Task of Auth0User</returns>
-        public Task<Auth0User> LoginAsync(IWin32Window owner, string connection = "", string scope = "openid")
+        public Task<Auth0User> LoginAsync(IWin32Window owner, string connection = "", string scope = "openid", IDictionary<string, string> authParams = null)
         {
             var tcs = new TaskCompletionSource<Auth0User>();
-            var auth = this.GetAuthenticator(connection, scope);
+            var auth = this.GetAuthenticator(connection, scope, authParams);
 
             auth.Error += (o, e) =>
             {
@@ -94,7 +109,7 @@ namespace Auth0.Windows
         /// <param name="password type="string"">User password.</param>
         /// <param name="scope">Optional. Scope indicating what attributes are needed. "openid" to just get the user id or "openid profile" to get back everything.
         /// </param>
-        public Task<Auth0User> LoginAsync(string connection, string userName, string password, string scope = "openid")
+        public Task<Auth0User> LoginAsync(string connection, string userName, string password, string scope = "openid", IDictionary<string, string> authParams = null)
         {
             var endpoint = string.Format(ResourceOwnerEndpoint, this.domain);
             var parameters = new Dictionary<string, string> 
@@ -246,7 +261,7 @@ namespace Auth0.Windows
             .Wait();
         }
 
-        protected virtual BrowserAuthenticationForm GetAuthenticator(string connection, string scope)
+        protected virtual BrowserAuthenticationForm GetAuthenticator(string connection, string scope, IDictionary<string, string> authParams = null)
         {
             // Generate state to include in startUri
             var chars = new char[16];
@@ -257,9 +272,15 @@ namespace Auth0.Windows
             }
 
             var redirectUri = this.CallbackUrl;
-            var authorizeUri = !string.IsNullOrWhiteSpace(connection) ?
-                string.Format(AuthorizeUrl, this.domain, this.clientId, Uri.EscapeDataString(redirectUri), connection, scope) :
-                string.Format(LoginWidgetUrl, this.domain, this.clientId, Uri.EscapeDataString(redirectUri), scope);
+            var authorizeUri = string.Format(AuthorizeUrl, this.domain, this.clientId, Uri.EscapeDataString(redirectUri),
+                Uri.EscapeDataString(connection), Uri.EscapeDataString(scope));
+
+            // Add custom auth params to the request.
+            if (authParams != null)
+            {
+                foreach (var authParam in authParams.Where(a => !ReservedAuthParams.Contains(a.Key)))
+                    authorizeUri += String.Format(ParamQueryString, authParam.Key, Uri.EscapeDataString(authParam.Value));
+            }
 
             this.State = new string(chars);
             var startUri = new Uri(authorizeUri + "&state=" + this.State);
