@@ -18,6 +18,7 @@ namespace Auth0.Windows
             this.Profile = accountProperties.ContainsKey("profile") ? accountProperties["profile"].ToJson() : null;
 
             this.State = accountProperties.ContainsKey("state") ? accountProperties["state"] : null;
+            this.RefreshToken = accountProperties.ContainsKey("refresh_token") ? accountProperties["refresh_token"] : null;
             this.IdTokenExpiresAt = this.Profile != null && this.Profile["exp"] != null ? 
                 UnixTimeStampToDateTime(double.Parse(this.Profile["exp"].ToString())) : 
                 DateTime.MaxValue; 
@@ -32,6 +33,8 @@ namespace Auth0.Windows
         public JObject Profile { get; set; }
 
         public string State { get; set; }
+
+        public string RefreshToken { get; set; }
 
         internal static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
         {

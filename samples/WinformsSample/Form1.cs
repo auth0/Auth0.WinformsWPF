@@ -1,5 +1,6 @@
 ﻿using Auth0.Windows;
 using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -18,7 +19,6 @@ namespace WinformsSample
 
         private void LoginWithWidgetButton_Click(object sender, EventArgs e)
         {
-            
             auth0.LoginAsync(this).ContinueWith(t =>
             {
                 if (t.IsFaulted)
