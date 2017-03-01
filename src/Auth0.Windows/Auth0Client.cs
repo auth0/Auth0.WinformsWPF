@@ -49,6 +49,8 @@ namespace Auth0.Windows
             this.clientId = clientId;
         }
 
+        public bool ShouldClearBrowserCache { get; set; } = true;
+
         public Auth0User CurrentUser { get; private set; }
 
         public string CallbackUrl
@@ -352,7 +354,7 @@ namespace Auth0.Windows
             var startUri = new Uri(authorizeUri + "&state=" + this.State);
             var endUri = new Uri(redirectUri);
 
-            var auth = new BrowserAuthenticationForm(startUri, endUri);
+            var auth = new BrowserAuthenticationForm(startUri, endUri, ShouldClearBrowserCache);
 
             return auth;
         }

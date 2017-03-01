@@ -12,6 +12,7 @@ namespace Auth0.Windows
 {
     public partial class BrowserAuthenticationForm : Form
     {
+        private readonly bool _shouldClearBrowserCache;
         public Uri StartUrl { get; set; }
         public Uri EndUrl { get; set; }
 
@@ -23,7 +24,7 @@ namespace Auth0.Windows
 
         private WebBrowser loadingBrowser = new WebBrowser();  
   
-        public BrowserAuthenticationForm(Uri startUrl, Uri endUrl)
+        public BrowserAuthenticationForm(Uri startUrl, Uri endUrl, bool shouldClearBrowserCache)
         {
             InitializeComponent();
             this.browser.Hide();
@@ -34,6 +35,7 @@ namespace Auth0.Windows
 
             this.StartUrl = startUrl;
             this.EndUrl = endUrl;
+            _shouldClearBrowserCache = shouldClearBrowserCache;
         }
 
         private void browser_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
@@ -130,7 +132,8 @@ namespace Auth0.Windows
 
         public void ShowUI(IWin32Window owner)
         {
-            WebBrowserHelper.ClearCache();
+            if (_shouldClearBrowserCache)
+                WebBrowserHelper.ClearCache();
 
             this.browser.Navigate(this.StartUrl.AbsoluteUri);
             this.ShowDialog(owner);
